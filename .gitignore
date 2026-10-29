@@ -1,0 +1,5 @@
+.author-pin
+data/posts.json
+data/seed_places.json
+__pycache__/
+*.pyc

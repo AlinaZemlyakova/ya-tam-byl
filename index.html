@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>я там был — карта</title>
+  <meta name="description" content="Карта канала «я там был, мёд-пиво пил»: места, где уже была, и места, куда хочется.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232c6248'/%3E%3Ccircle cx='16' cy='14' r='5' fill='%23f6f1e6'/%3E%3Cpath d='M16 18.5 L16 26' stroke='%23f6f1e6' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="vendor/leaflet.css">
+  <link rel="stylesheet" href="vendor/MarkerCluster.css">
+  <link rel="stylesheet" href="vendor/MarkerCluster.Default.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <div class="handle" aria-hidden="true"></div>
+      <header class="mast">
+        <p class="eyebrow">канал · <a href="https://t.me/ya_tam_byl" target="_blank" rel="noopener">@ya_tam_byl</a></p>
+        <h1>я там был</h1>
+        <p class="lede">мёд-пиво пил</p>
+        <p id="stats" class="stats"></p>
+        <p id="verdict-stats" class="stats soft"></p>
+      </header>
+
+      <div class="tools">
+        <div class="chips" id="bucket-chips" role="group" aria-label="Где я была"></div>
+        <div class="chips" id="verdict-chips" role="group" aria-label="Отзыв"></div>
+        <label class="search">
+          <span class="sr">Поиск</span>
+          <input id="q" type="search" placeholder="Место, город или слово из отзыва" autocomplete="off">
+        </label>
+        <label class="city-filter">
+          <span class="sr">Город</span>
+          <select id="city" aria-label="Город"></select>
+        </label>
+      </div>
+
+      <div id="list"></div>
+
+      <footer class="side-foot">
+        <button id="add-open" type="button">Добавить место</button>
+        <div class="foot-row">
+          <button id="share" class="quiet" type="button">Ссылка для друзей</button>
+          <button id="export" class="quiet" type="button" hidden>Скачать правки</button>
+        </div>
+        <p class="fine">«Понравилось» и «не понравилось» прочитаны по тону поста. Любую точку можно поправить.</p>
+      </footer>
+    </aside>
+
+    <div id="stage">
+      <div id="map" role="application" aria-label="Карта мест"></div>
+      <div id="legend">
+        <span><i class="pin pin-like"></i>понравилось</span>
+        <span><i class="pin pin-mixed"></i>смешанно</span>
+        <span><i class="pin pin-dislike"></i>не зашло</span>
+        <span><i class="pin pin-wish"></i>хочу</span>
+      </div>
+      <button id="fit" type="button">Все места</button>
+      <p id="pick-hint" hidden>Кликните по карте — точка встанет туда. Esc отменит.</p>
+    </div>
+  </div>
+
+  <dialog id="sheet">
+    <form id="place-form" method="dialog">
+      <div class="sheet-head">
+        <h2 id="sheet-title">Новое место</h2>
+        <button class="icon-x" type="button" id="sheet-close" aria-label="Закрыть">×</button>
+      </div>
+
+      <div class="status-switch" role="radiogroup" aria-label="Статус">
+        <label><input type="radio" name="status" value="wish" checked> Хочу побывать</label>
+        <label><input type="radio" name="status" value="been"> Уже была</label>
+      </div>
+
+      <label class="field">Название
+        <input name="name" required maxlength="120" placeholder="Например, Киото или двор на Литейном">
+      </label>
+      <label class="field">Город или регион
+        <input name="city" maxlength="60" list="cities" placeholder="Подставится из поиска">
+      </label>
+      <datalist id="cities"></datalist>
+      <label class="field" id="summary-field">Коротко
+        <textarea name="summary" maxlength="500" rows="3" placeholder="Пара фраз, зачем это место на карте"></textarea>
+      </label>
+
+      <div id="been-fields" hidden>
+        <div id="visits"></div>
+        <button id="add-visit" class="secondary" type="button">Ещё пост об этом месте</button>
+      </div>
+
+      <div class="finder">
+        <label class="field">Найти на карте
+          <input id="find" type="search" placeholder="Адрес, кафе, город" autocomplete="off">
+        </label>
+        <div id="find-results"></div>
+        <button id="pick" class="secondary" type="button">Поставить точку на карте</button>
+        <p id="point-label" class="point-label">Точка ещё не выбрана</p>
+      </div>
+
+      <label class="field" id="pin-field" hidden>Код автора
+        <input name="pin" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Чтобы место увидели все">
+      </label>
+
+      <p id="form-status" class="form-status" role="status"></p>
+
+      <div class="sheet-actions">
+        <button id="save" class="primary" type="submit">Сохранить</button>
+        <button id="remove" class="danger" type="button" hidden>Убрать с карты</button>
+      </div>
+    </form>
+  </dialog>
+
+  <p id="toast" class="toast" hidden role="status"></p>
+
+  <script src="vendor/leaflet.js"></script>
+  <script src="vendor/leaflet.markercluster.js"></script>
+  <script src="places.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
