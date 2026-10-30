@@ -173,7 +173,29 @@ function normalizeVisit(visit) {
     summary: (visit && visit.summary) || "",
     visited: (visit && visit.visited) || "",
     verdict: visit && ["like", "dislike", "mixed"].includes(visit.verdict) ? visit.verdict : "like",
+    image: safeImage(visit && visit.image),
   };
+}
+
+function safeImage(src) {
+  const value = String(src || "");
+  if (!/^images\/[a-z0-9][a-z0-9._-]*$/i.test(value)) return "";
+  return value;
+}
+
+function placeImage(place) {
+  const latest = latestVisit(place);
+  return (latest && latest.image) || safeImage(place && place.image);
+}
+
+function photoNode(src) {
+  const safe = safeImage(src);
+  if (!safe) return null;
+  const img = document.createElement("img");
+  img.className = "shot";
+  img.alt = "";
+  img.src = safe;
+  return img;
 }
 
 function placeVisits(place) {
@@ -227,36 +249,36 @@ function popupNode(place) {
   const meta = el("p", "popup-meta", [place.city, when].filter(Boolean).join(" · "));
   root.append(kicker, title, meta);
   if (place.status === "wish") {
-    if (place.summary) root.append(el("p", "popup-sum", place.summary));
-    const post = safeUrl(place.post || "");
-    if (post) root.append(postLink(post, "Пост в канале"));
+    appendStory(root, place.summary, place.image, place.post, "Пост в канале");
   } else if (visits.length <= 1) {
-    const visit = visits[0];
-    if (visit && visit.summary) root.append(el("p", "popup-sum", visit.summary));
-    const post = safeUrl((visit && visit.post) || "");
-    if (post) root.append(postLink(post, "Пост в канале"));
+    const visit = visits[0] || {};
+    appendStory(root, visit.summary || place.summary, visit.image || place.image, visit.post || place.post, "Пост в канале");
   } else {
     visits.forEach((visit, index) => {
       const block = el("div", "popup-visit");
       const bits = [fmtDate(visit.visited), VERDICT_LABEL[visit.verdict]].filter(Boolean);
       block.append(el("p", `popup-kicker ${visit.verdict}`, bits.join(" · ") || `Пост ${index + 1}`));
-      if (visit.summary) block.append(el("p", "popup-sum", visit.summary));
-      const post = safeUrl(visit.post || "");
-      if (post) block.append(postLink(post, `Пост ${index + 1}`));
+      appendStory(block, visit.summary, visit.image, visit.post, `Пост ${index + 1}`);
       root.append(block);
     });
   }
   const links = el("p", "popup-links");
   const yandex = safeUrl(place.yandex || "");
   if (yandex) links.append(postLink(yandex, "На картах"));
-  const edit = el("button", "text-btn", "Поправить");
-  edit.type = "button";
-  edit.addEventListener("click", () => {
-    state.draft = placeToDraft(place);
-    openSheet();
-  });
-  root.append(links, edit);
+  root.append(links);
   return root;
+}
+
+function appendStory(parent, summary, image, post, label) {
+  const row = el("div", "popup-row");
+  const shot = photoNode(image);
+  if (shot) row.append(shot);
+  const copy = el("div");
+  if (summary) copy.append(el("p", "popup-sum", summary));
+  const url = safeUrl(post || "");
+  if (url) copy.append(postLink(url, label));
+  if (copy.childNodes.length) row.append(copy);
+  if (row.childNodes.length) parent.append(row);
 }
 
 function placeToDraft(place) {
@@ -300,7 +322,7 @@ function renderList(list) {
   const box = document.getElementById("list");
   box.replaceChildren();
   if (!list.length) {
-    box.append(el("p", "empty", "Ничего не нашлось. Снимите фильтр или добавьте место."));
+    box.append(el("p", "empty", "Ничего не нашлось. Снимите фильтр."));
     return;
   }
   for (const place of list) {
@@ -321,6 +343,8 @@ function renderList(list) {
     const line = [fmtDate(placeDate(place)), (latest && latest.summary) || place.summary].filter(Boolean).join(" — ");
     if (line) body.append(el("p", "clamp", line));
     card.append(bar, body);
+    const shot = photoNode(placeImage(place));
+    if (shot) card.append(shot);
     card.addEventListener("click", () => focusPlace(place.id, true));
     box.append(card);
   }
@@ -335,13 +359,6 @@ function renderCities() {
   for (const city of cities) select.append(new Option(city, city));
   select.value = cities.includes(current) ? current : "";
   if (select.value !== current) state.city = "";
-  const list = document.getElementById("cities");
-  list.replaceChildren();
-  for (const city of cities) {
-    const option = document.createElement("option");
-    option.value = city;
-    list.append(option);
-  }
 }
 
 function renderStats() {
@@ -799,11 +816,6 @@ function wire() {
     fitVisible();
   });
   document.getElementById("fit").addEventListener("click", fitVisible);
-  document.getElementById("add-open").addEventListener("click", () => {
-    state.draft = emptyDraft();
-    openSheet();
-  });
-  document.getElementById("sheet-close").addEventListener("click", closeSheet);
   document.getElementById("share").addEventListener("click", async () => {
     if (location.protocol === "file:") {
       toast("Ссылку можно отправить, когда карта открыта через сервер, а не как файл.");
@@ -822,140 +834,8 @@ function wire() {
     }
     toast("Ссылка скопирована. Её можно отправить кому угодно.");
   });
-  document.getElementById("export").addEventListener("click", downloadPlaces);
-  document.getElementById("add-visit").addEventListener("click", () => {
-    state.draft = readForm();
-    state.draft.visits = [...(state.draft.visits || []), emptyVisit()];
-    renderVisitEditor();
-  });
-  document.getElementById("place-form").addEventListener("change", (event) => {
-    if (event.target.name === "status") {
-      state.draft = readForm();
-      if (state.draft.status === "been" && !(state.draft.visits || []).length) {
-        state.draft.visits = [emptyVisit()];
-      }
-      syncStatusFields();
-    }
-  });
-  document.getElementById("place-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    setFormStatus("", false);
-    state.draft = readForm();
-    let place;
-    try {
-      place = cleanClientPlace(state.draft);
-    } catch (error) {
-      setFormStatus(error.message, true);
-      return;
-    }
-    const authorPin = state.writable ? document.getElementById("place-form").elements.pin.value.trim() : "";
-    try {
-      if (state.writable && authorPin) {
-        await saveToServer(place, authorPin);
-        toast("Место на общей карте. Его увидят все, кто откроет ссылку.");
-      } else if (state.writable) {
-        setFormStatus("Введите код автора, чтобы место увидели все. Без кода оно останется только у вас.", true);
-        return;
-      } else {
-        rememberLocal(place);
-        toast("Сохранено в этом браузере. Чтобы место увидели другие, скачайте правки и положите файл в папку карты.");
-      }
-    } catch (error) {
-      setFormStatus(error.message, true);
-      return;
-    }
-    closeSheet();
-    state.selected = place.id;
-    render();
-    focusPlace(place.id, true);
-  });
-  document.getElementById("remove").addEventListener("click", async () => {
-    const id = state.draft.id;
-    if (!id) return;
-    if (!window.confirm("Убрать это место с карты?")) return;
-    const authorPin = state.writable ? document.getElementById("place-form").elements.pin.value.trim() : "";
-    if (state.writable && !authorPin) {
-      setFormStatus("Чтобы убрать место у всех, нужен код автора.", true);
-      return;
-    }
-    try {
-      const where = await deletePlace(id, authorPin);
-      toast(`Место убрано ${where}.`);
-    } catch (error) {
-      setFormStatus(error.message, true);
-      return;
-    }
-    closeSheet();
-    state.selected = null;
-    render();
-  });
-
-  document.getElementById("find").addEventListener("keydown", (event) => {
-    if (event.key === "Enter") event.preventDefault();
-  });
-  let searchTimer = 0;
-  document.getElementById("find").addEventListener("input", (event) => {
-    const query = event.target.value.trim();
-    const box = document.getElementById("find-results");
-    clearTimeout(searchTimer);
-    if (query.length < 2) {
-      box.replaceChildren();
-      return;
-    }
-    searchTimer = setTimeout(async () => {
-      box.replaceChildren(el("p", "point-label", "Ищу…"));
-      try {
-        const hits = await searchPlaces(query);
-        box.replaceChildren();
-        if (!hits.length) {
-          box.append(el("p", "point-label", "Ничего не нашлось. Поставьте точку вручную."));
-          return;
-        }
-        for (const hit of hits) {
-          const button = el("button", "", hit.label);
-          button.type = "button";
-          button.addEventListener("click", () => applyHit(hit));
-          box.append(button);
-        }
-      } catch {
-        box.replaceChildren(el("p", "point-label", "Поиск не ответил. Поставьте точку на карте."));
-      }
-    }, 400);
-  });
-
-  document.getElementById("pick").addEventListener("click", () => {
-    state.draft = readForm();
-    closeSheet();
-    state.picking = true;
-    document.body.classList.add("is-picking");
-    document.getElementById("pick-hint").hidden = false;
-  });
-
-  map.on("click", async (event) => {
-    if (!state.picking) return;
-    state.picking = false;
-    document.body.classList.remove("is-picking");
-    document.getElementById("pick-hint").hidden = true;
-    state.draft.lat = event.latlng.lat;
-    state.draft.lon = event.latlng.lng;
-    try {
-      const hit = await reverse(event.latlng.lat, event.latlng.lng);
-      if (hit) {
-        state.draft.address = hit.label || "";
-        if (!state.draft.name.trim()) state.draft.name = hit.name || "";
-        if (!state.draft.city.trim()) state.draft.city = hit.city || "";
-      }
-    } catch { /* coordinates are enough */ }
-    openSheet();
-  });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && state.picking) {
-      state.picking = false;
-      document.body.classList.remove("is-picking");
-      document.getElementById("pick-hint").hidden = true;
-      openSheet();
-    }
     if (event.key === "/" && document.activeElement === document.body) {
       event.preventDefault();
       document.getElementById("q").focus();

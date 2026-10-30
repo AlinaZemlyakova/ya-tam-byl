@@ -128,6 +128,7 @@ def clean_place(raw):
         "lon": lon,
         "yandex": yandex[:400],
         "summary": summary,
+        "image": clean_image(raw.get("image")) or (latest.get("image") if status == "been" else None),
     }
 
 
@@ -151,7 +152,18 @@ def clean_visit(raw):
         "summary": summary,
         "visited": visited,
         "verdict": verdict,
+        "image": clean_image(raw.get("image")),
     }
+
+
+def clean_image(value):
+    image = str(value or "").strip()
+    if not image.startswith("images/") or ".." in image or "\\" in image:
+        return None
+    name = image[len("images/"):]
+    if not name or "/" in name or not all(ch.isalnum() or ch in "._-" for ch in name):
+        return None
+    return image
 
 
 class Handler(SimpleHTTPRequestHandler):

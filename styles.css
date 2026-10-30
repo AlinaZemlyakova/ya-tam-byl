@@ -115,7 +115,28 @@ h1 {
   border-bottom: 1px solid var(--line);
   background: transparent;
   border-radius: 12px;
+  align-items: center;
 }
+.card:has(.shot) { grid-template-columns: 8px 1fr 64px; }
+.shot {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #e7e0d2;
+}
+.popup-row {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 10px;
+  align-items: start;
+  margin-top: 8px;
+}
+.popup-row:not(:has(.shot)) { grid-template-columns: 1fr; }
+.popup-row .shot { width: 72px; height: 72px; }
+.popup-row .popup-sum { margin-top: 0; }
+.popup-row a { display: inline-block; margin-top: 6px; font-size: 13px; font-weight: 700; text-decoration: none; }
+.popup-row a:hover { text-decoration: underline; }
 .card:hover, .card.active { background: rgba(44, 98, 72, 0.08); }
 .bar { border-radius: 99px; background: var(--moss); }
 .bar.like { background: var(--moss); }
