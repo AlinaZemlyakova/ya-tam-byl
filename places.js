@@ -1482,5 +1482,32 @@ window.PLACES = [
     "yandex": "https://yandex.ru/maps/org/gosudarstvenny_akademicheskiy_bolshoy_teatr_rossii_istoricheskaya_stsena/1098615602?si=bwg3d75hv1mm6uzmzp3ny02p30",
     "summary": "Здесь стоит сделать оговорку: современное здание, которое мы наблюдаем сейчас на Театральной площади, было возведено по проекту Осипа Бове почти 200 лет назад. Это одна из причин, по которой я снова сюда возвращаюсь.",
     "image": "images/374.jpg"
+  },
+  {
+    "id": "p-384",
+    "name": "Surf Coffee x Yacht",
+    "status": "been",
+    "verdict": "like",
+    "city": "Москва",
+    "visited": "2026-10-22",
+    "post": "https://t.me/ya_tam_byl/384",
+    "visits": [
+      {
+        "post": "https://t.me/ya_tam_byl/384",
+        "summary": "Хоть канал и пестрит разнообразием локаций от заброшенных церквей до театров, бывают дни, когда я не прыгаю в вулкан.",
+        "visited": "2026-10-22",
+        "verdict": "like",
+        "image": "images/384.jpg"
+      }
+    ],
+    "address": "Ленинградское ш., 69, корп. 2, Москва",
+    "tags": [
+      "кафе"
+    ],
+    "lat": 55.8693634,
+    "lon": 37.4566363,
+    "yandex": "https://yandex.ru/maps/org/surf_coffee_x_yacht/152613251841?si=bwg3d75hv1mm6uzmzp3ny02p30",
+    "summary": "Хоть канал и пестрит разнообразием локаций от заброшенных церквей до театров, бывают дни, когда я не прыгаю в вулкан.",
+    "image": "images/384.jpg"
   }
 ];
